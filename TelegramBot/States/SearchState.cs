@@ -27,6 +27,27 @@ public class SearchState: BaseState
     {
     }
     
+    /// <summary>
+    /// Проверить пользователя на соответствие фильтрам.
+    /// </summary>
+    /// <param name="user">
+    /// Пользователь.
+    /// </param>
+    /// <returns>
+    /// Результат проверки.
+    /// </returns>
+    public bool IsValidForSearch(StorageUtils.User user)
+    {
+        foreach (var filter in _filters)
+        {
+            if (!filter.Validate(user))
+            {
+                return false;
+            }
+        }
+        
+        return true;
+    }
     
     /// <summary>
     /// Конструктор с идентификатором чата.
@@ -75,6 +96,9 @@ public class SearchState: BaseState
     private void HandleImmidiateSearchDelegate(SearchState user)
     {
         if (!_isSearching || !user._isSearching)
+            return;
+        
+        if (!user.IsValidForSearch(_user) || !IsValidForSearch(user._user))
             return;
         
         user.StopSearch(this);

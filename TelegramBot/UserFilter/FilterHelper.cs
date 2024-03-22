@@ -62,9 +62,15 @@ public abstract class FilterHelper<T>: UserFilter.Filter
     /// <returns>
     /// Возраст.
     /// </returns>
-    private static int CalculateAge(DateOnly age) {  
-        DateTime ageWithTime = age.ToDateTime(TimeOnly.MinValue);
-        return new DateTime(DateTime.Now.Subtract(ageWithTime).Ticks).Year - 1;  
+    private static uint CalculateAge(DateOnly birthdate)
+    {
+        var today = DateTime.Today;
+        
+        var age = today.Year - birthdate.Year;
+        
+        if (birthdate.ToDateTime(new TimeOnly()) > today.AddYears(-age)) age--;
+
+        return (uint)age;
     }   
 
     /// <summary>

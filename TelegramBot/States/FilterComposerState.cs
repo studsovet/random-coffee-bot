@@ -11,14 +11,16 @@ namespace TelegramBot.States;
 /// </summary>
 public class FilterComposerState: BaseState
 {
-    private Filter[] _filters;
+    private Dictionary<string, Filter> _filters;
+    private string FilterSource { get; set; }
+    private string FilterValue { get; set; }
     
     /// <summary>
     /// Конструктор по умолчанию.
     /// </summary>
     public FilterComposerState() : base(0)
     {
-        _filters = new Filter[] { };
+        _filters = new Dictionary<string, Filter>();
     }
     
     /// <summary>
@@ -29,7 +31,7 @@ public class FilterComposerState: BaseState
     /// </param>
     public FilterComposerState(long chatId) : base(chatId)
     {
-        _filters = new Filter[] { };
+        _filters = new Dictionary<string, Filter>();
     }
     
     /// <summary>
@@ -39,6 +41,10 @@ public class FilterComposerState: BaseState
     {
         var keyboard = new InlineKeyboardMarkup(new[]
         {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Перейти к поиску", "StartSearch")
+            },
             new[]
             {
                 InlineKeyboardButton.WithCallbackData("Фильтр по возрасту", "FilterByAge")
@@ -67,7 +73,12 @@ public class FilterComposerState: BaseState
         switch (query)
         {
             case "FilterByAge":
-                _filters = new Filter[] { new FilterHolder("Фильтр по возрасту", FilterType.ByAge) };
+                FilterSource = "FilterByAge";
+
+                await SendMessageAsync("Напишите возраст для фильтрации: (например, 20 или 20-22)");
+                break;
+            case "StartSearch":
+                UpdateState(new SearchState(ChatId, _filters.Values.ToArray()));
                 break;
         }
     }
@@ -90,6 +101,47 @@ public class FilterComposerState: BaseState
         {
             await HandleQuery(update.CallbackQuery.Data ?? "");
             return;
+        }
+
+        if (update.Type == UpdateType.Message && update.Message != null)
+        {
+            if (FilterSource == "FilterByAge")
+            {
+                FilterValue = update.Message.Text ?? "";
+                
+                if (FilterValue.Contains("-"))
+                {
+                    string[] values = FilterValue.Split('-');
+                    if (values.Length != 2)
+                    {
+                        await SendMessageAsync("Неверный формат. Попробуйте еще раз.");
+                        return;
+                    }
+                    
+                    uint minAge, maxAge;
+                    
+                    if (!uint.TryParse(values[0], out minAge) || !uint.TryParse(values[1], out maxAge) || minAge > maxAge)
+                    {
+                        await SendMessageAsync("Неверный формат. Попробуйте еще раз.");
+                        return;
+                    }
+                    
+                    _filters["Age"] = new FilterInRange<uint>("Возраст", FilterType.ByAge, minAge, maxAge);
+                }
+                else
+                {
+                    if (!uint.TryParse(FilterValue, out uint age))
+                    {
+                        await SendMessageAsync("Неверный формат. Попробуйте еще раз.");
+                        return;
+                    }
+                    
+                    _filters["Age"] = new FilterInList<uint>("Возраст", FilterType.ByAge, new List<uint> { age });
+                }
+                
+                await SendMessageAsync("Фильтр успешно добавлен.");
+                await AskForFilter();
+            }
         }
     }
 }

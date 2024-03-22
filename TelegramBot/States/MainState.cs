@@ -35,6 +35,10 @@ public class MainState : BaseState
             {
                 InlineKeyboardButton.WithCallbackData(text: "Найти собеседника", callbackData: "find")
             },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(text: "Фильтры", callbackData: "filters")
+            }
         }));
     }
     
@@ -69,6 +73,9 @@ public class MainState : BaseState
                     break;
                 case "find":
                     UpdateState<SearchState>();
+                    break;
+                case "filters":
+                    UpdateState<FilterComposerState>();
                     break;
             }
             

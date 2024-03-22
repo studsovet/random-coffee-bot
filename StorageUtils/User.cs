@@ -37,27 +37,29 @@ public class User
 
     public User(long id)
     {
-        var reader = Database.ExecuteReader($"SELECT * FROM users WHERE id = {id};");
+        Id = id;
+        
+        Load();
+    }
+    
+    public User(Telegram.Bot.Types.User user): this(user.Id) {}
+
+    private void Load()
+    {
+        var reader = Database.ExecuteReader($"SELECT * FROM users WHERE id = {Id};");
         
         if (reader.Read())
         {
-            Id = reader.GetInt64(0);
             FirstName = reader.GetString(1);
             LastName = reader.GetString(2);
             Username = reader.GetString(3);
             LanguageCode = reader.GetString(4);
+
+            var date = reader.GetDateTime(5);
+            BirthDate = DateOnly.FromDateTime(date);
         }
         
         reader.Close();
-    }
-    
-    public User(Telegram.Bot.Types.User user)
-    {
-        Id = user.Id;
-        FirstName = user.FirstName;
-        LastName = user.LastName ?? "";
-        Username = user.Username ?? "";
-        LanguageCode = user.LanguageCode ?? "RU";
     }
     
     public void Save()
