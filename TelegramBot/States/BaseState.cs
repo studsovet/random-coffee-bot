@@ -1,6 +1,8 @@
 using Telegram.Bot;
+using Telegram.Bot.Requests;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using File = Telegram.Bot.Types.File;
 
 namespace TelegramBot.States;
 
@@ -124,6 +126,79 @@ public abstract class BaseState
             message,
             replyMarkup: replyMarkup
             );
+    }
+
+    /// <summary>
+    /// Отправить фотографию.
+    /// </summary>
+    /// <param name="photo">
+    /// Фотография.
+    /// </param>
+    /// <param name="caption">
+    /// Подпись.
+    /// </param>
+    /// <param name="replyMarkup">
+    /// Разметка ответа.
+    /// </param>
+    protected async Task SendPhotoAsync(File photo, string caption = "", IReplyMarkup? replyMarkup = null)
+    {
+        await SendPhotoAsync(new InputFileId(photo.FileId), caption, replyMarkup);
+    }
+    
+    /// <summary>
+    /// Отправить фотографию.
+    /// </summary>
+    /// <param name="photo">
+    /// Фотография.
+    /// </param>
+    /// <param name="caption">
+    /// Подпись.
+    /// </param>
+    /// <param name="replyMarkup">
+    /// Разметка ответа.
+    /// </param>
+    protected async Task SendPhotoAsync(InputFile photo, string caption = "", IReplyMarkup? replyMarkup = null)
+    {
+        if (_botClient == null)
+        {
+            Console.WriteLine("BotClient is null.");
+            return;
+        }
+        
+        await _botClient.SendPhotoAsync(
+            ChatId,
+            photo: photo,
+            caption: caption,
+            replyMarkup: replyMarkup
+            );
+    }
+    
+    /// <summary>
+    /// Получить фотографии профиля пользователя.
+    /// </summary>
+    /// <returns>
+    /// Фотографии профиля пользователя.
+    /// </returns>
+    protected async Task<UserProfilePhotos> GetUserProfilePhotos()
+    {
+        if (_botClient == null)
+        {
+            Console.WriteLine("BotClient is null.");
+            return new UserProfilePhotos();
+        }
+        
+        return await _botClient.GetUserProfilePhotosAsync(ChatId);
+    }
+    
+    protected async Task<File?> GetFileById(string fileId)
+    {
+        if (_botClient == null)
+        {
+            Console.WriteLine("BotClient is null.");
+            return null;
+        }
+        
+        return await _botClient.GetFileAsync(fileId);
     }
     
     /// <summary>

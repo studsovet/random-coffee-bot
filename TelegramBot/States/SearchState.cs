@@ -2,6 +2,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBot.UserFilter;
+using File = Telegram.Bot.Types.File;
 
 namespace TelegramBot.States;
 
@@ -79,11 +80,28 @@ public class SearchState: BaseState
     /// <param name="user">
     /// Пользователь, который остановил поиск.
     /// </param>
-    private void StopSearch(SearchState user)
+    private async Task StopSearch(SearchState user)
     {
         _handleImmidiateSearchDelegate -= HandleImmidiateSearchDelegate;
         _isSearching = false;
-        SendMessageAsync($"Мы нашли вам собеседника!\nВот контакт: @{user._user.Username} ({user._user.FirstName} {user._user.LastName})").Wait();
+        
+        UserProfilePhotos photos = await user.GetUserProfilePhotos();
+        if (photos.Photos.Length == 0)
+        {
+            await SendMessageAsync("Мы не смогли найти фотографии вашего собеседника. Но вот его контакт: @" + user._user.Username);
+            return;
+        }
+        
+        string fileId = photos.Photos[0][0].FileId;
+        File? file = await user.GetFileById(fileId);
+        
+        if (file == null)
+        {
+            await SendMessageAsync("Мы не смогли найти фотографии вашего собеседника. Но вот его контакт: @" + user._user.Username);
+            return;
+        }
+        
+        SendPhotoAsync(file, $"Мы нашли вам собеседника!\nВот контакт: @{user._user.Username} ({user._user.FirstName} {user._user.LastName})").Wait();
         UpdateState<MainState>();
     }
     
@@ -100,9 +118,9 @@ public class SearchState: BaseState
         
         if (!user.IsValidForSearch(_user) || !IsValidForSearch(user._user))
             return;
-        
-        user.StopSearch(this);
-        StopSearch(user);
+
+        user.StopSearch(this).Wait();
+        StopSearch(user).Wait();
     }
 
     /// <summary>
